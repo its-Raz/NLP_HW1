@@ -214,6 +214,7 @@ def preprocess_train(train_path, threshold):
     statistics = FeatureStatistics()
     statistics.get_word_tag_pair_count(train_path)
 
+
     # feature2id
     feature2id = Feature2id(statistics, threshold)
     feature2id.get_features_idx()
