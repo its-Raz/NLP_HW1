@@ -42,11 +42,13 @@ class FeatureStatistics:
                     self.tags.add(cur_tag)
                     self.tags_counts[cur_tag] += 1
                     self.words_count[cur_word] += 1
-
+                    # f100
                     if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
+
+                    #f102
 
 
                 sentence = [("*", "*"), ("*", "*")]
@@ -234,6 +236,7 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
     @param tagged: whether the file is tagged (validation set) or not (test set)
     @return: a list of all the sentences, each sentence represented as tuple of list of the words and a list of tags
     """
+    true_pred = [] # raz added
     list_of_sentences = []
     with open(file_path) as f:
         for line in f:
@@ -244,11 +247,13 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
             for word_idx in range(len(split_words)):
                 if tagged:
                     cur_word, cur_tag = split_words[word_idx].split('_')
+                    true_pred.extend([cur_tag])  # raz added
                 else:
                     cur_word, cur_tag = split_words[word_idx], ""
                 sentence[WORD].append(cur_word)
                 sentence[TAG].append(cur_tag)
+
             sentence[WORD].append("~")
             sentence[TAG].append("~")
             list_of_sentences.append(sentence)
-    return list_of_sentences
+    return list_of_sentences,true_pred # raz added true_pred

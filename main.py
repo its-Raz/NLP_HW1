@@ -2,14 +2,14 @@ import pickle
 from preprocessing import preprocess_train
 from optimization import get_optimal_vector
 from inference import tag_all_test
-
+from sklearn.metrics import accuracy_score
 
 def main():
     threshold = 1
     lam = 1
 
     train_path = "data/train1.wtag"
-    test_path = "data/comp1.words"
+    test_path = "data/test1.wtag"
 
     weights_path = 'weights.pkl'
     predictions_path = 'predictions.wtag'
@@ -22,8 +22,10 @@ def main():
     pre_trained_weights = optimal_params[0]
 
     print(pre_trained_weights)
-    tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path)
-
+    pred,true_pred = tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path) # raz added
+    accuracy = accuracy_score(pred, true_pred)
+    print("Accuracy:", accuracy)
+    print('here')
 
 if __name__ == '__main__':
     main()
