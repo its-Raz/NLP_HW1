@@ -148,7 +148,7 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
 
 def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
     tagged = "test" in test_path
-    test,true_pred = read_test(test_path, tagged=tagged)
+    test,true_pred = read_test(test_path, tagged=tagged) # added true_pred
 
     output_file = open(predictions_path, "a+")
     predictions = [] # raz added

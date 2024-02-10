@@ -13,7 +13,7 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100","f103","f104","f105","f106","f107"]  # the feature classes used in the code
+        feature_dict_list = ["f100","f101","f102","f103","f104","f105","f106","f107"]  # the feature classes used in the code
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -47,31 +47,44 @@ class FeatureStatistics:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
-
-                    #f102
-
-
                 sentence = [("*", "*"), ("*", "*")]
                 for pair in split_words:
                     sentence.append(tuple(pair.split("_")))
                 sentence.append(("~", "~"))
 
                 for i in range(2, len(sentence) - 1):
+                    curr_word = sentence[i][0] # ADDED CODE FOR f101+102
+                    prefixes = []
+                    suffixes = []
+                    if len(curr_word) >= 5:
+                        prefixes,suffixes = get_prefixes_suffixes(curr_word)
+
                     history = (
                         sentence[i][0], sentence[i][1], sentence[i - 1][0], sentence[i - 1][1], sentence[i - 2][0],
-                        sentence[i - 2][1], sentence[i + 1][0])
+                        sentence[i - 2][1], sentence[i + 1][0],prefixes,suffixes)
 
                     self.histories.append(history)
 
+                    # f101+102
+                    if len(curr_word)>=5:
+                        for suffix,prefix in zip(suffixes,prefixes):
+                            if (suffix, cur_tag) not in self.feature_rep_dict["f101"]:
+                                self.feature_rep_dict["f101"][(suffix, cur_tag)] = 1
+                            else:
+                                self.feature_rep_dict["f101"][(suffix, cur_tag)] += 1
+                            if (prefix, cur_tag) not in self.feature_rep_dict["f102"]:
+                                self.feature_rep_dict["f102"][(prefix, cur_tag)] = 1
+                            else:
+                                self.feature_rep_dict["f102"][(prefix, cur_tag)] += 1
                     # f103
-                    if i > 3 and i < len(sentence) - 2:
+                    if i > 3 and i < len(sentence) - 1:
                         if (sentence[i - 2][1], sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f103"]:
                             self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] = 1
                         else:
                             self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] += 1
 
                     # f104 + f106
-                    if i > 2 and i < len(sentence) - 2:
+                    if i > 2 and i < len(sentence) - 1:
                         if (sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f104"]:
                             self.feature_rep_dict["f104"][(sentence[i - 1][1],sentence[i][1])] = 1
                         else:
@@ -83,21 +96,24 @@ class FeatureStatistics:
                             self.feature_rep_dict["f106"][(sentence[i - 1][0],sentence[i][1])] += 1
 
                     #f105
-                    if i > 1 and i < len(sentence) - 2:
+                    if i > 1 and i < len(sentence):
                         if (sentence[i][1]) not in self.feature_rep_dict["f105"]:
                             self.feature_rep_dict["f105"][(sentence[i][1])] = 1
                         else:
                             self.feature_rep_dict["f105"][(sentence[i][1])] += 1
 
                     #f107
-                    if i>2 and i < len(sentence) - 3:
-                        if (sentence[i+1][0],sentence[i][1]) not in self.feature_rep_dict["f107"]:
-                            self.feature_rep_dict["f107"][(sentence[i+1][0],sentence[i][1])] = 1
+                    if i>2 and i < len(sentence) - 1:
+                        if (sentence[i][0],sentence[i-1][1]) not in self.feature_rep_dict["f107"]:
+                            self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] = 1
                         else:
-                            self.feature_rep_dict["f107"][(sentence[i+1][0],sentence[i][1])] += 1
+                            self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] += 1
 
 
-
+def get_prefixes_suffixes(word):
+    prefixes = [word[:i] for i in range(2, min(5, len(word)-2))]
+    suffixes = [word[-i:] for i in range(2, min(5, len(word)-2))]
+    return prefixes, suffixes
 class Feature2id:
     def __init__(self, feature_statistics: FeatureStatistics, threshold: int):
         """
@@ -112,13 +128,13 @@ class Feature2id:
         # Init all features dictionaries
         self.feature_to_idx = {
             "f100": OrderedDict(),
+            "f101": OrderedDict(),
+            "f102": OrderedDict(),
             "f103": OrderedDict(),
             "f104": OrderedDict(),
             "f105": OrderedDict(),
             "f106": OrderedDict(),
             "f107": OrderedDict(),
-
-
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -131,13 +147,18 @@ class Feature2id:
         Assigns each feature that appeared enough time in the train files an idx.
         Saves those indices to self.feature_to_idx
         """
+        threshold_for_pre_suf = 20 # ADDED threshold for f101 and f102
+        threshold = self.threshold
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
+            if feat_class == "f101" or feat_class == "f102":
+                threshold = threshold_for_pre_suf
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
-                if count >= self.threshold:
+                if count >= threshold:
                     self.feature_to_idx[feat_class][feat] = self.n_total_features
                     self.n_total_features += 1
+            threshold = self.threshold
         print(f"you have {self.n_total_features} features!")
 
     def calc_represent_input_with_features(self) -> None:
@@ -154,9 +175,10 @@ class Feature2id:
                 small_rows.append(small_r)
                 small_cols.append(c)
             for r, y_tag in enumerate(self.feature_statistics.tags):
-                demi_hist = (hist[0], y_tag, hist[2], hist[3], hist[4], hist[5], hist[6])
+                history = (hist[0], y_tag, hist[2], hist[3], hist[4], hist[5], hist[6],hist[7],hist[8]) # We added prefixes and sufi
+                demi_hist = history[:7]
                 self.histories_features[demi_hist] = []
-                for c in represent_input_with_features(demi_hist, self.feature_to_idx):
+                for c in represent_input_with_features(history, self.feature_to_idx): # we changed demi_hist to history
                     big_rows.append(big_r)
                     big_cols.append(c)
                     self.histories_features[demi_hist].append(c)
@@ -186,11 +208,19 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     pp_word = history[4]
     pp_tag = history[5]
     n_word = history[6]
+    prefixes = history[7]
+    suffixes = history[8]
     features = []
 
     # f100
     if (c_word, c_tag) in dict_of_dicts["f100"]:
         features.append(dict_of_dicts["f100"][(c_word, c_tag)])
+    # f101+102
+    for suffix,prefix in zip(suffixes,prefixes):
+        if (suffix, c_tag) in dict_of_dicts["f101"]:
+            features.append(dict_of_dicts["f101"][(suffix, c_tag)])
+        if (prefix, c_tag) in dict_of_dicts["f102"]:
+            features.append(dict_of_dicts["f102"][(prefix, c_tag)])
     # f103
     if (pp_tag,p_tag,c_tag) in dict_of_dicts["f103"]:
         features.append(dict_of_dicts["f103"][(pp_tag,p_tag,c_tag)])
