@@ -22,9 +22,25 @@ def main():
     pre_trained_weights = optimal_params[0]
 
     print(pre_trained_weights)
-    pred,true_pred = tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path) # raz added
+    pred,true_pred,words = tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path) # raz added
+    print('after tag')
+
     accuracy = accuracy_score(pred, true_pred)
     print("Accuracy:", accuracy)
+    mistakes_counts = {}
+
+    # Iterate through the lists
+    for word, true, predict in zip(words, true_pred, pred):
+        # If the prediction is incorrect, update the mistake count for this (word, true, pred) tuple
+        if true != predict:
+            key = (word, true, predict)
+            if key in mistakes_counts:
+                mistakes_counts[key] += 1
+            else:
+                mistakes_counts[key] = 1
+
+    for (word, true, pred), count in mistakes_counts.items():
+        print("Word:", word, " ,True label:", true, "Predicted label:", pred, " ,Number of mistakes:", count)
     print('here')
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100","f101","f102","f103","f104","f105","f106","f107"]  # the feature classes used in the code
+        feature_dict_list = ["f100","f101","f102","f103","f104","f105","f106","f107","f108","f109"]  # the feature classes used in the code
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -37,23 +37,27 @@ class FeatureStatistics:
                 if line[-1:] == "\n":
                     line = line[:-1]
                 split_words = line.split(' ')
+                sentence = [("*", "*"), ("*", "*")] # We added for optimization
                 for word_idx in range(len(split_words)):
                     cur_word, cur_tag = split_words[word_idx].split('_')
                     self.tags.add(cur_tag)
                     self.tags_counts[cur_tag] += 1
                     self.words_count[cur_word] += 1
+                    pair = (cur_word,cur_tag) # We added for optimization
+                    sentence.append(pair) # We added for optimization
                     # f100
                     if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
-                sentence = [("*", "*"), ("*", "*")]
-                for pair in split_words:
-                    sentence.append(tuple(pair.split("_")))
+                # sentence = [("*", "*"), ("*", "*")]
+                # for pair in split_words:
+                #     sentence.append(tuple(pair.split("_")))
                 sentence.append(("~", "~"))
 
                 for i in range(2, len(sentence) - 1):
                     curr_word = sentence[i][0] # ADDED CODE FOR f101+102
+                    cur_tag = sentence[i][1]
                     prefixes = []
                     suffixes = []
                     if len(curr_word) >= 5:
@@ -77,37 +81,53 @@ class FeatureStatistics:
                             else:
                                 self.feature_rep_dict["f102"][(prefix, cur_tag)] += 1
                     # f103
-                    if i > 3 and i < len(sentence) - 1:
-                        if (sentence[i - 2][1], sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f103"]:
-                            self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] = 1
-                        else:
-                            self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] += 1
+                    if (sentence[i - 2][1], sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f103"]:
+                        self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] = 1
+                    else:
+                        self.feature_rep_dict["f103"][(sentence[i - 2][1], sentence[i - 1][1],sentence[i][1])] += 1
 
                     # f104 + f106
-                    if i > 2 and i < len(sentence) - 1:
-                        if (sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f104"]:
-                            self.feature_rep_dict["f104"][(sentence[i - 1][1],sentence[i][1])] = 1
-                        else:
-                            self.feature_rep_dict["f104"][(sentence[i - 1][1],sentence[i][1])] += 1
 
-                        if (sentence[i - 1][0],sentence[i][1]) not in self.feature_rep_dict["f106"]:
-                            self.feature_rep_dict["f106"][(sentence[i - 1][0],sentence[i][1])] = 1
-                        else:
-                            self.feature_rep_dict["f106"][(sentence[i - 1][0],sentence[i][1])] += 1
+                    if (sentence[i - 1][1],sentence[i][1]) not in self.feature_rep_dict["f104"]:
+                        self.feature_rep_dict["f104"][(sentence[i - 1][1],sentence[i][1])] = 1
+                    else:
+                        self.feature_rep_dict["f104"][(sentence[i - 1][1],sentence[i][1])] += 1
+
+                    if (sentence[i - 1][0],sentence[i][1]) not in self.feature_rep_dict["f106"]:
+                        self.feature_rep_dict["f106"][(sentence[i - 1][0],sentence[i][1])] = 1
+                    else:
+                        self.feature_rep_dict["f106"][(sentence[i - 1][0],sentence[i][1])] += 1
 
                     #f105
-                    if i > 1 and i < len(sentence):
-                        if (sentence[i][1]) not in self.feature_rep_dict["f105"]:
-                            self.feature_rep_dict["f105"][(sentence[i][1])] = 1
-                        else:
-                            self.feature_rep_dict["f105"][(sentence[i][1])] += 1
+
+                    if (sentence[i][1]) not in self.feature_rep_dict["f105"]:
+                        self.feature_rep_dict["f105"][(sentence[i][1])] = 1
+                    else:
+                        self.feature_rep_dict["f105"][(sentence[i][1])] += 1
 
                     #f107
-                    if i>2 and i < len(sentence) - 1:
-                        if (sentence[i][0],sentence[i-1][1]) not in self.feature_rep_dict["f107"]:
-                            self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] = 1
+                    if (sentence[i][0],sentence[i-1][1]) not in self.feature_rep_dict["f107"]:
+                        self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] = 1
+                    else:
+                        self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] += 1
+
+                    #f108
+                    if is_numeric(sentence[i][0]):
+
+                        if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f108"]:
+                            self.feature_rep_dict["f108"][(sentence[i][0],sentence[i][1])] = 1
                         else:
-                            self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] += 1
+                            self.feature_rep_dict["f108"][(sentence[i][0],sentence[i][1])] += 1
+
+                    #f109
+
+                    if has_uppercase(sentence[i][0]):
+                        if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f109"]:
+                                self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] = 1
+                        else:
+                                self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] += 1
+
+
 
 
 def get_prefixes_suffixes(word):
@@ -135,6 +155,8 @@ class Feature2id:
             "f105": OrderedDict(),
             "f106": OrderedDict(),
             "f107": OrderedDict(),
+            "f108": OrderedDict(),
+            "f109": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -147,12 +169,12 @@ class Feature2id:
         Assigns each feature that appeared enough time in the train files an idx.
         Saves those indices to self.feature_to_idx
         """
-        threshold_for_pre_suf = 20 # ADDED threshold for f101 and f102
+        threshold_for_pre_suf = 30 # ADDED threshold for f101 and f102
         threshold = self.threshold
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
-            if feat_class == "f101" or feat_class == "f102":
+            if feat_class == "f101" or feat_class == "f102" or feat_class == "f109":
                 threshold = threshold_for_pre_suf
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
@@ -236,6 +258,13 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     #f107
     if (n_word,c_tag) in dict_of_dicts["f107"]:
         features.append(dict_of_dicts["f107"][(n_word,c_tag)])
+    # f108
+    if (c_word, c_tag) in dict_of_dicts["f108"]:
+        features.append(dict_of_dicts["f108"][(c_word, c_tag)])
+    # f109
+    if (c_word, c_tag) in dict_of_dicts["f109"]:
+        features.append(dict_of_dicts["f109"][(c_word, c_tag)])
+
 
 
     return features
@@ -287,3 +316,31 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
             sentence[TAG].append("~")
             list_of_sentences.append(sentence)
     return list_of_sentences,true_pred # raz added true_pred
+
+def is_numeric(word):
+    # Remove unwanted characters
+    characters_to_remove = ["\/", "/", ".", ",",":"]
+    for char in characters_to_remove:
+        word = word.replace(char, '')
+
+    # Afer the removal check if it is digits only
+    if word.isdigit():
+        return True
+
+    # List of words that represent numbers
+    number_words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+                    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+                    "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
+                    "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million",
+                    "billion", "trillion"]
+
+    # Check if the word is in the list of number words
+    return word.lower() in number_words
+
+def has_uppercase(word):
+    """
+    Use any Becuase it can has upper case char in the middle
+    of a word. Example : eBay (brand)
+    """
+    return any(char.isupper() for char in word)
+

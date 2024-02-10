@@ -3,6 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import math
 from sklearn.metrics import accuracy_score
+from preprocessing import get_prefixes_suffixes,is_numeric,has_uppercase
 
 MIN_VALUE = -99999
 
@@ -13,7 +14,6 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
     You can implement Beam Search to improve runtime
     Implement q efficiently (refer to conditional probability definition in MEMM slides)
     """
-    print('here')
 
     beam_threshold = 2
     all_tags = feature2id.feature_statistics.tags
@@ -66,7 +66,6 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
         predictions.append(t)
         last_tag = prev_last_tag
         prev_last_tag = t
-    print('hi!')
     predictions.append('*')
     predictions.reverse()
 
@@ -77,7 +76,11 @@ def create_history(pp_tag, p_tag, c_tag, sentence, index):
     c_word = sentence[index]
     p_word = sentence[index - 1]
     ne_word = sentence[index + 1]
-    history = [c_word, c_tag, p_word, p_tag, pp_tag, ne_word]
+    prefixes = []
+    suffixes = []
+    if len(c_word) >= 5:
+        prefixes, suffixes = get_prefixes_suffixes(c_word)
+    history = [c_word, c_tag, p_word, p_tag, pp_tag, ne_word,prefixes,suffixes]
     return history
 
 
@@ -118,10 +121,21 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
     p_tag = history[3]
     pp_tag = history[4]
     ne_word = history[5]
+    prefixes = history[6]
+    suffixes = history[7]
     # f100
     if (c_word, c_tag) in feature_to_idx['f100']:
         index = feature_to_idx['f100'][(c_word, c_tag)]
         vec_features[index] = 1
+    # f101+f102
+    if len(c_word) >= 5:
+        for suffix, prefix in zip(suffixes, prefixes):
+            if (suffix, c_tag) in feature_to_idx['f101']:
+                index = feature_to_idx['f101'][(suffix, c_tag)]
+                vec_features[index] = 1
+            if (prefix, c_tag) in feature_to_idx['f102']:
+                index = feature_to_idx['f102'][(prefix, c_tag)]
+                vec_features[index] = 1
     # f103
     if (pp_tag, p_tag, c_tag) in feature_to_idx['f103']:
         index = feature_to_idx['f103'][(pp_tag, p_tag, c_tag)]
@@ -138,10 +152,20 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
     if (p_word, c_tag) in feature_to_idx['f106']:
         index = feature_to_idx['f106'][(p_word, c_tag)]
         vec_features[index] = 1
-    # f106
+    # f107
     if (ne_word, c_tag) in feature_to_idx['f107']:
         index = feature_to_idx['f107'][(ne_word, c_tag)]
         vec_features[index] = 1
+    # f108
+    if is_numeric(c_word):
+        if (c_word, c_tag) in feature_to_idx['f108']:
+            index = feature_to_idx['f108'][(c_word, c_tag)]
+            vec_features[index] = 1
+    # f109
+    if has_uppercase(c_word):
+        if (c_word, c_tag) in feature_to_idx['f109']:
+            index = feature_to_idx['f109'][(c_word, c_tag)]
+            vec_features[index] = 1
 
     return vec_features
 
@@ -152,6 +176,7 @@ def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
 
     output_file = open(predictions_path, "a+")
     predictions = [] # raz added
+    words = []
     for k, sen in tqdm(enumerate(test), total=len(test)):
         sentence = sen[0]
         pred = memm_viterbi(sentence, pre_trained_weights, feature2id)[1:]
@@ -161,7 +186,8 @@ def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
             if i > 0:
                 output_file.write(" ")
             output_file.write(f"{sentence[i]}_{pred[i]}")
+            words.append(sentence[i])
         output_file.write("\n")
     output_file.close()
-    return predictions,true_pred # raz added
+    return predictions,true_pred,words # raz added
 
