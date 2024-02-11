@@ -15,7 +15,7 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
     Implement q efficiently (refer to conditional probability definition in MEMM slides)
     """
 
-    beam_threshold = 2
+    beam_threshold = 3
     all_tags = feature2id.feature_statistics.tags
 
     current_pai = {}
@@ -157,15 +157,17 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
         index = feature_to_idx['f107'][(ne_word, c_tag)]
         vec_features[index] = 1
     # f108
-    if is_numeric(c_word):
-        if (c_word, c_tag) in feature_to_idx['f108']:
-            index = feature_to_idx['f108'][(c_word, c_tag)]
+    numeric,template = is_numeric(c_word)
+    if numeric:
+        if (template, c_tag) in feature_to_idx['f108']:
+            index = feature_to_idx['f108'][(template, c_tag)]
             vec_features[index] = 1
     # f109
-    if has_uppercase(c_word):
-        if (c_word, c_tag) in feature_to_idx['f109']:
-            index = feature_to_idx['f109'][(c_word, c_tag)]
-            vec_features[index] = 1
+
+    # if has_uppercase(c_word):
+    #     if (c_word, c_tag) in feature_to_idx['f109']:
+    #         index = feature_to_idx['f109'][(c_word, c_tag)]
+    #         vec_features[index] = 1
 
     return vec_features
 

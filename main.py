@@ -33,14 +33,16 @@ def main():
     for word, true, predict in zip(words, true_pred, pred):
         # If the prediction is incorrect, update the mistake count for this (word, true, pred) tuple
         if true != predict:
-            key = (word, true, predict)
+            key = (true, predict)
             if key in mistakes_counts:
-                mistakes_counts[key] += 1
-            else:
-                mistakes_counts[key] = 1
 
-    for (word, true, pred), count in mistakes_counts.items():
-        print("Word:", word, " ,True label:", true, "Predicted label:", pred, " ,Number of mistakes:", count)
+                mistakes_counts[key].append(word)
+            else:
+                mistakes_counts[key] = []
+                mistakes_counts[key].append(word)
+
+    for (true, pred), word in mistakes_counts.items():
+        print(" ,True label:", true, "Predicted label:", pred, " Words", word," Number of mistakes:",len(word))
     print('here')
 
 if __name__ == '__main__':

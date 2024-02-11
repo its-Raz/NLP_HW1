@@ -112,20 +112,20 @@ class FeatureStatistics:
                         self.feature_rep_dict["f107"][(sentence[i][0],sentence[i-1][1])] += 1
 
                     #f108
-                    if is_numeric(sentence[i][0]):
-
-                        if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f108"]:
-                            self.feature_rep_dict["f108"][(sentence[i][0],sentence[i][1])] = 1
+                    numeric,template = is_numeric(sentence[i][0])
+                    if numeric:
+                        if (template,sentence[i][1]) not in self.feature_rep_dict["f108"]:
+                            self.feature_rep_dict["f108"][(template,sentence[i][1])] = 1
                         else:
-                            self.feature_rep_dict["f108"][(sentence[i][0],sentence[i][1])] += 1
+                            self.feature_rep_dict["f108"][(template,sentence[i][1])] += 1
 
                     #f109
 
-                    if has_uppercase(sentence[i][0]):
-                        if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f109"]:
-                                self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] = 1
-                        else:
-                                self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] += 1
+                    # if has_uppercase(sentence[i][0]):
+                    #     if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f109"]:
+                    #             self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] = 1
+                    #     else:
+                    #             self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] += 1
 
 
 
@@ -156,7 +156,7 @@ class Feature2id:
             "f106": OrderedDict(),
             "f107": OrderedDict(),
             "f108": OrderedDict(),
-            "f109": OrderedDict(),
+            # "f109": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -170,12 +170,20 @@ class Feature2id:
         Saves those indices to self.feature_to_idx
         """
         threshold_for_pre_suf = 30 # ADDED threshold for f101 and f102
+        upper_treshold = 25
+        upper2_thresh = 5
+
+
         threshold = self.threshold
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
-            if feat_class == "f101" or feat_class == "f102" or feat_class == "f109":
+            if feat_class == "f101" or feat_class == "f102" :
                 threshold = threshold_for_pre_suf
+            if feat_class == "f104":
+                threshold = upper_treshold
+            if feat_class == "f103":
+                threshold=upper2_thresh
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
                     self.feature_to_idx[feat_class][feat] = self.n_total_features
@@ -233,6 +241,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     prefixes = history[7]
     suffixes = history[8]
     features = []
+    numeric,template = is_numeric(c_word)
 
     # f100
     if (c_word, c_tag) in dict_of_dicts["f100"]:
@@ -259,11 +268,12 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if (n_word,c_tag) in dict_of_dicts["f107"]:
         features.append(dict_of_dicts["f107"][(n_word,c_tag)])
     # f108
-    if (c_word, c_tag) in dict_of_dicts["f108"]:
-        features.append(dict_of_dicts["f108"][(c_word, c_tag)])
+    if numeric:
+        if (template, c_tag) in dict_of_dicts["f108"]:
+            features.append(dict_of_dicts["f108"][(template, c_tag)])
     # f109
-    if (c_word, c_tag) in dict_of_dicts["f109"]:
-        features.append(dict_of_dicts["f109"][(c_word, c_tag)])
+    # if (c_word, c_tag) in dict_of_dicts["f109"]:
+    #     features.append(dict_of_dicts["f109"][(c_word, c_tag)])
 
 
 
@@ -318,14 +328,6 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
     return list_of_sentences,true_pred # raz added true_pred
 
 def is_numeric(word):
-    # Remove unwanted characters
-    characters_to_remove = ["\/", "/", ".", ",",":"]
-    for char in characters_to_remove:
-        word = word.replace(char, '')
-
-    # Afer the removal check if it is digits only
-    if word.isdigit():
-        return True
 
     # List of words that represent numbers
     number_words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -333,14 +335,66 @@ def is_numeric(word):
                     "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
                     "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million",
                     "billion", "trillion"]
+    contains_letter = False
+    contains_digit = False
+    letters = ''
+    chars = ''
 
-    # Check if the word is in the list of number words
-    return word.lower() in number_words
+    for i, char in enumerate(word):
+        if char.isdigit():
+            contains_digit = True
+        elif char.isalpha():
+            contains_letter = True
+            letters += char
+        else:
+
+            chars += char
+            if i < len(word) - 1:  # check if the string have more
+                if (word[i + 1].isdigit() and contains_letter == False):  # no letters
+                    if (contains_digit):
+                        return True, chars
+                elif (word[i + 1].isalpha() and contains_digit == False):  # e.g Four-year
+                    if (letters.lower() in number_words):
+                        template = word[i:len(word)]
+                        return True, template
+                elif (word[i + 1].isalpha() and contains_digit == True):
+                    return True, word[i:len(word)]
+                else:
+                    chars += word[i + 1]
+
+    if (contains_digit == True):
+        if (contains_letter == False):
+            return True, 'only_digit'
+    else:  # digit false
+        if contains_letter == True:
+            if (word.lower() in number_words):  # two,Two
+                return True, 'only_letters'
+        else:  # no digitis and no letters
+            return False, ''
+
+    return False, ''
+
+# def alpha_and_numeric(word):
+#     # Remove unwanted characters
+#     # List of words that represent numbers
+#     number_words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+#                     "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+#                     "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
+#                     "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million",
+#                     "billion", "trillion"]
+#
+#
+#     contains_digit = False
+#     contains_letter = False
+#     letters = ''
+#     chars = ''
+
+
 
 def has_uppercase(word):
     """
     Use any Becuase it can has upper case char in the middle
     of a word. Example : eBay (brand)
     """
-    return any(char.isupper() for char in word)
+    return word[0].isupper()
 
