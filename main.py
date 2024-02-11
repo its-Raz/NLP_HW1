@@ -8,8 +8,8 @@ def main():
     threshold = 1
     lam = 1
 
-    train_path = "data/train1.wtag"
-    test_path = "data/test1.wtag"
+    train_path = "data/train3.wtag"
+    test_path = "data/test2.wtag"
 
     weights_path = 'weights.pkl'
     predictions_path = 'predictions.wtag'

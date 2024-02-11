@@ -129,8 +129,8 @@ class FeatureStatistics:
                             sentence[i][0], sentence[i-1][1])] += 1
 
                     # f108
-                    numeric, template = is_numeric(sentence[i][0])
-                    if numeric:
+                    template = build_template(sentence[i][0])
+                    if template != "OnlyAlpha" and template != "Neither": # anything else contains numerical rep
                         if (template, sentence[i][1]) not in self.feature_rep_dict["f108"]:
                             self.feature_rep_dict["f108"][(
                                 template, sentence[i][1])] = 1
@@ -139,12 +139,13 @@ class FeatureStatistics:
                                 template, sentence[i][1])] += 1
 
                     # f109
-
-                    # if has_uppercase(sentence[i][0]):
-                    #     if (sentence[i][0],sentence[i][1]) not in self.feature_rep_dict["f109"]:
-                    #             self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] = 1
-                    #     else:
-                    #             self.feature_rep_dict["f109"][(sentence[i][0],sentence[i][1])] += 1
+                    if has_uppercase(sentence[i][0]):
+                        plural = is_plural(sentence[i][0])
+                        uppers = more_then_one_upper(sentence[i][0])
+                        if (plural,uppers,sentence[i][1]) not in self.feature_rep_dict["f109"]:
+                                self.feature_rep_dict["f109"][(plural,uppers,sentence[i][1])] = 1
+                        else:
+                                self.feature_rep_dict["f109"][(plural,uppers,sentence[i][1])] += 1
 
 
 def get_prefixes_suffixes(word):
@@ -176,7 +177,7 @@ class Feature2id:
             "f106": OrderedDict(),
             "f107": OrderedDict(),
             "f108": OrderedDict(),
-            # "f109": OrderedDict(),
+            "f109": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -192,6 +193,7 @@ class Feature2id:
         threshold_for_pre_suf = 30  # ADDED threshold for f101 and f102
         upper_treshold = 25
         upper2_thresh = 5
+        upper3=20
 
         threshold = self.threshold
         for feat_class in self.feature_statistics.feature_rep_dict:
@@ -203,6 +205,8 @@ class Feature2id:
                 threshold = upper_treshold
             if feat_class == "f103":
                 threshold = upper2_thresh
+            if feat_class == "f109":
+                threshold = upper3
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
                     self.feature_to_idx[feat_class][feat] = self.n_total_features
@@ -262,7 +266,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     prefixes = history[7]
     suffixes = history[8]
     features = []
-    numeric, template = is_numeric(c_word)
+    template = build_template(c_word)
 
     # f100
     if (c_word, c_tag) in dict_of_dicts["f100"]:
@@ -289,12 +293,15 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if (n_word, c_tag) in dict_of_dicts["f107"]:
         features.append(dict_of_dicts["f107"][(n_word, c_tag)])
     # f108
-    if numeric:
+    if template != "OnlyAlpha" and template!="Neither":
         if (template, c_tag) in dict_of_dicts["f108"]:
             features.append(dict_of_dicts["f108"][(template, c_tag)])
     # f109
-    # if (c_word, c_tag) in dict_of_dicts["f109"]:
-    #     features.append(dict_of_dicts["f109"][(c_word, c_tag)])
+    if has_uppercase(c_word):
+        plural = is_plural(c_word)
+        uppers = more_then_one_upper(c_word)
+        if (plural,uppers, c_tag) in dict_of_dicts["f109"]:
+            features.append(dict_of_dicts["f109"][(plural,uppers, c_tag)])
 
     return features
 
@@ -372,14 +379,18 @@ def get_word_type(word):
 
 def is_numeric_with_or_without_signs(word):
     # signs without ' - ' beacuse we did a pre check on it.
-    signs = ""
+    template = ""
+    current_is_digit = False
     for char in word:
         if char.isdigit() == False:
-            signs += char
-    if len(signs) != 0:
-        return signs
-    else:
-        return "OnlyDigits"
+            current_is_digit = False
+            template += char
+        else:
+            if(current_is_digit==False):
+                template+='digit'
+                current_is_digit = True
+
+    return template
 
 
 def is_numerical_string(word):
@@ -390,8 +401,8 @@ def is_numerical_string(word):
                     "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million",
                     "billion", "trillion"]
     # lower the word
-    word = word.lower
-    # plural to singal if there is a 's' in the end.
+    word = word.lower()
+    # plural to singel if there is a 's' in the end.
     if word[-1] == 's':
         word = word[0:-1]
 
@@ -409,22 +420,26 @@ def return_our_tag_of_word(word):
     elif word_type == "Numeric":
         return is_numeric_with_or_without_signs(word)
     elif word_type == "Neither":
-        return word
+        return "Neither"
     # for AlphaNumeric:
     return "Mixed"
 
 
-def build_template(word_with_dash):
+def build_template(word):
     # samples :
     # four-ship  -> numerical_string-OnlyAlpha
     # 1\/2-year  -> \/-OnlyAlpha
     # 2003-2005  -> OnlyDigits-OnlyDigits
     template = ""
-    array_of_words = word_with_dash.split("-")
-    for word in array_of_words:
-        template += return_our_tag_of_word(word)
-        template += '-'
-    # remove the last -
+    array_of_words = word.split("-")
+    if(len(array_of_words)==1):
+        template+=return_our_tag_of_word(word)
+        return template
+    else:
+        for word in array_of_words:
+            template += return_our_tag_of_word(word)
+            template += '-'
+        # remove the last -
     return template[0:-1]
 
 
@@ -433,4 +448,18 @@ def has_uppercase(word):
     Use any Becuase it can has upper case char in the middle
     of a word. Example : eBay (brand)
     """
-    return any(char.isupper() for char in word)
+    return word[0].isupper()
+
+def more_then_one_upper(word):
+    counter = 0
+    for char in word:
+        if char.isupper():
+            counter+=1
+    if counter > 1:
+        return True
+    return False
+def is_plural(word):
+    if word[-1] == 's':
+        if word[-2] != 's':
+            return False
+    return True

@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import math
 from sklearn.metrics import accuracy_score
-from preprocessing import get_prefixes_suffixes,is_numeric,has_uppercase
+from preprocessing import get_prefixes_suffixes,build_template,has_uppercase,is_plural,more_then_one_upper
 
 MIN_VALUE = -99999
 
@@ -157,17 +157,19 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
         index = feature_to_idx['f107'][(ne_word, c_tag)]
         vec_features[index] = 1
     # f108
-    numeric,template = is_numeric(c_word)
-    if numeric:
+    template = build_template(c_word)
+    if template != "OnlyAlpha" and template!="Neither":
         if (template, c_tag) in feature_to_idx['f108']:
             index = feature_to_idx['f108'][(template, c_tag)]
             vec_features[index] = 1
     # f109
 
-    # if has_uppercase(c_word):
-    #     if (c_word, c_tag) in feature_to_idx['f109']:
-    #         index = feature_to_idx['f109'][(c_word, c_tag)]
-    #         vec_features[index] = 1
+    if has_uppercase(c_word):
+        plural = is_plural(c_word)
+        uppers = more_then_one_upper(c_word)
+        if (plural,uppers, c_tag) in feature_to_idx['f109']:
+            index = feature_to_idx['f109'][(plural,uppers, c_tag)]
+            vec_features[index] = 1
 
     return vec_features
 
