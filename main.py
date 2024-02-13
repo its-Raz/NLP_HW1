@@ -8,8 +8,8 @@ def main():
     threshold = 1
     lam = 1
 
-    train_path = "data/train3.wtag"
-    test_path = "data/test2.wtag"
+    train_path = "data/train1.wtag"
+    test_path = "data/test1.wtag"
 
     weights_path = 'weights.pkl'
     predictions_path = 'predictions.wtag'
@@ -40,8 +40,8 @@ def main():
             else:
                 mistakes_counts[key] = []
                 mistakes_counts[key].append(word)
-
-    for (true, pred), word in mistakes_counts.items():
+    sorted_dict = dict(sorted(mistakes_counts.items(), key=lambda item: item[0]))
+    for (true, pred), word in sorted_dict.items():
         print(" ,True label:", true, "Predicted label:", pred, " Words", word," Number of mistakes:",len(word))
     print('here')
 

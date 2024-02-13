@@ -14,7 +14,7 @@ class FeatureStatistics:
 
         # Init all features dictionaries
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105",
-                             "f106", "f107", "f108", "f109"]  # the feature classes used in the code
+                             "f106", "f107", "f108", "f109","f110","f111"]  # the feature classes used in the code
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -75,7 +75,7 @@ class FeatureStatistics:
                     self.histories.append(history)
 
                     # f101+102
-                    if len(curr_word) >= 5:
+                    if len(curr_word) >= 4:
                         for suffix, prefix in zip(suffixes, prefixes):
                             if (suffix, cur_tag) not in self.feature_rep_dict["f101"]:
                                 self.feature_rep_dict["f101"][(
@@ -146,6 +146,20 @@ class FeatureStatistics:
                                 self.feature_rep_dict["f109"][(plural,uppers,sentence[i][1])] = 1
                         else:
                                 self.feature_rep_dict["f109"][(plural,uppers,sentence[i][1])] += 1
+                    # f110+f111
+                    if len(sentence[i][0])>=4:
+                        common_suf,suffix = common_suffix(sentence[i][0])
+                        common_pre,prefix = common_prefix(sentence[i][0])
+                        if common_suf:
+                            if (suffix,sentence[i-1][1], sentence[i][1]) not in self.feature_rep_dict["f110"]:
+                                self.feature_rep_dict["f110"][(suffix,sentence[i-1][1], sentence[i][1])] = 1
+                            else:
+                                self.feature_rep_dict["f110"][(suffix,sentence[i-1][1], sentence[i][1])] += 1
+                        if common_pre:
+                            if (prefix,sentence[i-1][1], sentence[i][1]) not in self.feature_rep_dict["f111"]:
+                                self.feature_rep_dict["f111"][(prefix,sentence[i-1][1], sentence[i][1])] = 1
+                            else:
+                                self.feature_rep_dict["f111"][(prefix,sentence[i-1][1], sentence[i][1])] += 1
 
 
 def get_prefixes_suffixes(word):
@@ -178,6 +192,8 @@ class Feature2id:
             "f107": OrderedDict(),
             "f108": OrderedDict(),
             "f109": OrderedDict(),
+            "f110": OrderedDict(),
+            "f111": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -193,20 +209,28 @@ class Feature2id:
         threshold_for_pre_suf = 30  # ADDED threshold for f101 and f102
         upper_treshold = 25
         upper2_thresh = 5
-        upper3=20
-
+        upper9=10
+        upper4=10
+        upper10=5
         threshold = self.threshold
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
-            if feat_class == "f101" or feat_class == "f102":
-                threshold = threshold_for_pre_suf
-            if feat_class == "f104":
-                threshold = upper_treshold
-            if feat_class == "f103":
-                threshold = upper2_thresh
-            if feat_class == "f109":
-                threshold = upper3
+            # if feat_class == "f101" or feat_class == "f102":
+            #     threshold = threshold_for_pre_suf
+            # if feat_class == "f104":
+            #     threshold = upper_treshold
+            # if feat_class == "f103":
+            #     threshold = upper2_thresh
+            # if feat_class == "f108":
+            #     threshold=upper4
+            # if feat_class == "f109":
+            #     threshold = upper9
+            # if feat_class == "f110" or feat_class == "f111":
+            #     threshold = upper10
+            # if feat_class == "f106" :
+            #     threshold=5
+
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
                     self.feature_to_idx[feat_class][feat] = self.n_total_features
@@ -268,6 +292,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     features = []
     template = build_template(c_word)
 
+
     # f100
     if (c_word, c_tag) in dict_of_dicts["f100"]:
         features.append(dict_of_dicts["f100"][(c_word, c_tag)])
@@ -302,6 +327,16 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         uppers = more_then_one_upper(c_word)
         if (plural,uppers, c_tag) in dict_of_dicts["f109"]:
             features.append(dict_of_dicts["f109"][(plural,uppers, c_tag)])
+    #f110
+    if len(c_word)>=4:
+        com_suffix,suffix = common_suffix(c_word)
+        com_prefix,prefix = common_prefix(c_word)
+        if com_suffix:
+            if (suffix, p_tag, c_tag) in dict_of_dicts["f110"]:
+                features.append(dict_of_dicts["f110"][(suffix, p_tag, c_tag)])
+        if com_prefix:
+            if (prefix, p_tag, c_tag) in dict_of_dicts["f111"]:
+                features.append(dict_of_dicts["f111"][(prefix, p_tag, c_tag)])
 
     return features
 
@@ -460,6 +495,51 @@ def more_then_one_upper(word):
     return False
 def is_plural(word):
     if word[-1] == 's':
-        if word[-2] != 's':
+        if word[-2] == 's':
             return False
     return True
+
+def common_suffix(word):
+    #TODO y is in ity ify, s in ness ious, enous , run from 4/5 last letters
+    suffixes_length_1 = ["s", "y"]
+    suffixes_length_2 = ["er", "or", "ty", "al", "ic", "ly", "en", "es", "ed"]
+    suffixes_length_3 = ["ist", "ity", "ful",  "ion", "ate", "ify", "ize", "ise", "hip","ive", "dom"]
+    suffixes_length_4 = ["ness", "ible", "ious",  "ship", "hood"]
+    suffixes_length_5 = ["ation", "ition", "ative", "itive", "enous"]
+    suffixes_lists = [
+        suffixes_length_1,
+        suffixes_length_2,
+        suffixes_length_3,
+        suffixes_length_4,
+        suffixes_length_5
+    ]
+    suffix = ''
+    for index, char in enumerate(reversed(word), 0):
+        suffix+=char
+        if suffix in suffixes_lists[index]:
+            if suffix == 's':
+                if word[-2:] == 'es':
+                    return True, 'es'
+                else:
+                    return True, suffix
+            return True,suffix
+        if index == (len(word) - 1) or index == 4:
+            return False,''
+    return False,''
+
+def common_prefix(word):
+
+    pre_fixes_1_letters = []
+    prefixes_2_letters = ['un', 're', 'in', 'im', 'en', 'em', 'de', 'dis', 'ex', "ir","bi"]
+    prefixes_3_letters = ['pre', 'pro', 'sub', 'mis', 'non', 'tri', 'uni', 'tri',  "dis"]
+    prefixes_4_letters = ['anti', 'auto', 'over', 'semi', 'post', 'mega',  'mini', 'mono', 'tele']
+    prefixes_5_letters = ['super', 'hyper', 'under', 'inter', 'extra', 'infra', 'multi', 'macro', 'micro']
+    prefixes_list = [pre_fixes_1_letters,prefixes_2_letters,prefixes_3_letters,prefixes_4_letters,prefixes_5_letters]
+    prefix = ''
+    for index, char in enumerate(word, 0):
+        prefix += char
+        if prefix in prefixes_list[index]:
+            return True, prefix
+        if index == (len(word) - 1) or index == 3:
+            return False, ''
+    return False, ''

@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import math
 from sklearn.metrics import accuracy_score
-from preprocessing import get_prefixes_suffixes,build_template,has_uppercase,is_plural,more_then_one_upper
+from preprocessing import get_prefixes_suffixes,build_template,has_uppercase,is_plural,more_then_one_upper,common_suffix,common_prefix
 
 MIN_VALUE = -99999
 
@@ -15,7 +15,7 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
     Implement q efficiently (refer to conditional probability definition in MEMM slides)
     """
 
-    beam_threshold = 3
+    beam_threshold = 2
     all_tags = feature2id.feature_statistics.tags
 
     current_pai = {}
@@ -171,6 +171,18 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
             index = feature_to_idx['f109'][(plural,uppers, c_tag)]
             vec_features[index] = 1
 
+    #f110
+    if len(c_word)>=4:
+        com_suffix,suffix = common_suffix(c_word)
+        com_prefix,prefix = common_prefix(c_word)
+        if com_suffix:
+            if (suffix, p_tag, c_tag) in feature_to_idx['f110']:
+                index = feature_to_idx['f110'][(suffix, p_tag, c_tag)]
+                vec_features[index] = 1
+        if com_prefix:
+            if (prefix, p_tag, c_tag) in feature_to_idx['f111']:
+                index = feature_to_idx['f111'][(prefix, p_tag, c_tag)]
+                vec_features[index] = 1
     return vec_features
 
 
