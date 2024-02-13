@@ -4,25 +4,28 @@ from optimization import get_optimal_vector
 from inference import tag_all_test
 from sklearn.metrics import accuracy_score
 
+
 def main():
     threshold = 1
-    lam = 1
+    lam = 0.38
 
-    train_path = "data/train3.wtag"
-    test_path = "data/test2.wtag"
+    train_path = "data/train1.wtag"
+    test_path = "data/test1.wtag"
 
     weights_path = 'weights.pkl'
     predictions_path = 'predictions.wtag'
 
     statistics, feature2id = preprocess_train(train_path, threshold)
-    get_optimal_vector(statistics=statistics, feature2id=feature2id, weights_path=weights_path, lam=lam)
+    get_optimal_vector(statistics=statistics, feature2id=feature2id,
+                       weights_path=weights_path, lam=lam)
 
     with open(weights_path, 'rb') as f:
         optimal_params, feature2id = pickle.load(f)
     pre_trained_weights = optimal_params[0]
 
     print(pre_trained_weights)
-    pred,true_pred,words = tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path) # raz added
+    pred, true_pred, words = tag_all_test(
+        test_path, pre_trained_weights, feature2id, predictions_path)  # raz added
     print('after tag')
 
     accuracy = accuracy_score(pred, true_pred)
@@ -40,10 +43,13 @@ def main():
             else:
                 mistakes_counts[key] = []
                 mistakes_counts[key].append(word)
-    sorted_dict = dict(sorted(mistakes_counts.items(), key=lambda item: item[0]))
+    sorted_dict = dict(
+        sorted(mistakes_counts.items(), key=lambda item: item[0]))
     for (true, pred), word in sorted_dict.items():
-        print(" ,True label:", true, "Predicted label:", pred, " Words", word," Number of mistakes:",len(word))
+        print(" ,True label:", true, "Predicted label:", pred,
+              " Words", word, " Number of mistakes:", len(word))
     print('here')
+
 
 if __name__ == '__main__':
     main()

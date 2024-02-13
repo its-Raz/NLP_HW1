@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import math
 from sklearn.metrics import accuracy_score
-from preprocessing import get_prefixes_suffixes,build_template,has_uppercase,is_plural,more_then_one_upper,common_suffix,common_prefix
+from preprocessing import get_prefixes_suffixes, build_template, has_uppercase, is_plural, more_then_one_upper, common_suffix, common_prefix
 
 MIN_VALUE = -99999
 
@@ -27,8 +27,10 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
     c_tags = list(all_tags)  # Sk
     p_pairs = get_all_possible_pairs(pp_tags, p_tags)
     for k in range(2, len(sentence) - 1):
-        c_pairs = get_all_possible_pairs(p_tags, c_tags)  # pai(k,u,v) u from S(k-1) c_tag=all tags
-        q = calculate_q_probability(pre_trained_weights, c_tags, p_pairs, sentence, k, feature2id)
+        # pai(k,u,v) u from S(k-1) c_tag=all tags
+        c_pairs = get_all_possible_pairs(p_tags, c_tags)
+        q = calculate_q_probability(
+            pre_trained_weights, c_tags, p_pairs, sentence, k, feature2id)
         for pair in c_pairs:
             prev_tag = pair[0]
             curr_tag = pair[1]
@@ -37,20 +39,23 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id):
 
             else:
                 if k == 3:
-                    current_pai[(prev_tag, curr_tag)] = prev_pai[('*', prev_tag)] * q[('*', prev_tag, curr_tag)]
+                    current_pai[(prev_tag, curr_tag)] = prev_pai[(
+                        '*', prev_tag)] * q[('*', prev_tag, curr_tag)]
                 else:
                     tag_max = ('', MIN_VALUE)
                     # q_probabilities[(pair[0],pair[1],curr_tag)]
                     for t in pp_tags:
-                        if (t,prev_tag) in p_pairs:
-                            value = prev_pai[(t, prev_tag)] * q[(t, prev_tag, curr_tag)]
+                        if (t, prev_tag) in p_pairs:
+                            value = prev_pai[(t, prev_tag)] * \
+                                q[(t, prev_tag, curr_tag)]
                             if value > tag_max[1]:
                                 tag_max = (t, value)
                         else:
                             continue
                     current_pai[(prev_tag, curr_tag)] = tag_max[1]
                     bp[(k - 1, prev_tag, curr_tag)] = tag_max[0]
-        sort_curr_pai = sorted(current_pai.items(), key=lambda x: x[1], reverse=True)[:beam_threshold]
+        sort_curr_pai = sorted(current_pai.items(), key=lambda x: x[1], reverse=True)[
+            :beam_threshold]
         current_pai = {key: value for key, value in sort_curr_pai}
         p_pairs = list(current_pai.keys())
         prev_pai = current_pai.copy()
@@ -80,7 +85,8 @@ def create_history(pp_tag, p_tag, c_tag, sentence, index):
     suffixes = []
     if len(c_word) >= 5:
         prefixes, suffixes = get_prefixes_suffixes(c_word)
-    history = [c_word, c_tag, p_word, p_tag, pp_tag, ne_word,prefixes,suffixes]
+    history = [c_word, c_tag, p_word, p_tag,
+               pp_tag, ne_word, prefixes, suffixes]
     return history
 
 
@@ -90,9 +96,12 @@ def calculate_q_probability(weights, tags_3, possible_perv_pairs, sentence, inde
     denominator = {}
     for pair in possible_perv_pairs:
         for curr_tag in tags_3:
-            history = create_history(pair[0], pair[1], curr_tag, sentence, index)
-            value = math.exp(feature_weights_inner_product(weights, feature2id, history, curr_tag))
-            q_probabilities[(pair[0], pair[1], curr_tag)] = value  # THIS IS THE NEMRATOR BEFORE DIVISION
+            history = create_history(
+                pair[0], pair[1], curr_tag, sentence, index)
+            value = math.exp(feature_weights_inner_product(
+                weights, feature2id, history, curr_tag))
+            # THIS IS THE NEMRATOR BEFORE DIVISION
+            q_probabilities[(pair[0], pair[1], curr_tag)] = value
             if pair in denominator:
                 denominator[pair] += value
             else:
@@ -110,7 +119,8 @@ def get_all_possible_pairs(tags_1, tags_2):
 
 
 def feature_weights_inner_product(weights, feature2id, history, tag):
-    feature_vecotr = create_feature_vector(history, weights.size, feature2id.feature_to_idx, tag)
+    feature_vecotr = create_feature_vector(
+        history, weights.size, feature2id.feature_to_idx, tag)
     return np.inner(weights, feature_vecotr)
 
 
@@ -158,7 +168,7 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
         vec_features[index] = 1
     # f108
     template = build_template(c_word)
-    if template != "OnlyAlpha" and template!="Neither":
+    if template != "OnlyAlpha" and template != "Neither":
         if (template, c_tag) in feature_to_idx['f108']:
             index = feature_to_idx['f108'][(template, c_tag)]
             vec_features[index] = 1
@@ -167,14 +177,14 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
     if has_uppercase(c_word):
         plural = is_plural(c_word)
         uppers = more_then_one_upper(c_word)
-        if (plural,uppers, c_tag) in feature_to_idx['f109']:
-            index = feature_to_idx['f109'][(plural,uppers, c_tag)]
+        if (plural, uppers, c_tag) in feature_to_idx['f109']:
+            index = feature_to_idx['f109'][(plural, uppers, c_tag)]
             vec_features[index] = 1
 
-    #f110
-    if len(c_word)>=4:
-        com_suffix,suffix = common_suffix(c_word)
-        com_prefix,prefix = common_prefix(c_word)
+    # f110 + #f111
+    if len(c_word) >= 4:
+        com_suffix, suffix = common_suffix(c_word)
+        com_prefix, prefix = common_prefix(c_word)
         if com_suffix:
             if (suffix, p_tag, c_tag) in feature_to_idx['f110']:
                 index = feature_to_idx['f110'][(suffix, p_tag, c_tag)]
@@ -183,20 +193,26 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
             if (prefix, p_tag, c_tag) in feature_to_idx['f111']:
                 index = feature_to_idx['f111'][(prefix, p_tag, c_tag)]
                 vec_features[index] = 1
+
+    # f112
+    if (len(c_word), c_tag) in feature_to_idx['f112']:
+        index = feature_to_idx['f112'][(len(c_word), c_tag)]
+        vec_features[index] = 1
+
     return vec_features
 
 
 def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
     tagged = "test" in test_path
-    test,true_pred = read_test(test_path, tagged=tagged) # added true_pred
+    test, true_pred = read_test(test_path, tagged=tagged)  # added true_pred
 
     output_file = open(predictions_path, "a+")
-    predictions = [] # raz added
+    predictions = []  # raz added
     words = []
     for k, sen in tqdm(enumerate(test), total=len(test)):
         sentence = sen[0]
         pred = memm_viterbi(sentence, pre_trained_weights, feature2id)[1:]
-        predictions.extend(pred) # raz added
+        predictions.extend(pred)  # raz added
         sentence = sentence[2:]
         for i in range(len(pred)):
             if i > 0:
@@ -205,5 +221,4 @@ def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
             words.append(sentence[i])
         output_file.write("\n")
     output_file.close()
-    return predictions,true_pred,words # raz added
-
+    return predictions, true_pred, words  # raz added

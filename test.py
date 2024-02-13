@@ -35,7 +35,7 @@ def is_numeric_with_or_without_signs(word):
             template += char
         else:
             if (current_is_digit == False):
-                template += 'digit'
+                template += 'digits'
                 current_is_digit = True
 
     return template
@@ -92,4 +92,4 @@ def build_template(word):
     return ''.join(list_to_concat)
 
 
-print(build_template("Four-2$"))
+print(build_template("$23"))
