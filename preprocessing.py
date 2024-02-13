@@ -501,45 +501,33 @@ def is_plural(word):
 
 def common_suffix(word):
     #TODO y is in ity ify, s in ness ious, enous , run from 4/5 last letters
-    suffixes_length_1 = ["s", "y"]
-    suffixes_length_2 = ["er", "or", "ty", "al", "ic", "ly", "en", "es", "ed"]
-    suffixes_length_3 = ["ist", "ity", "ful",  "ion", "ate", "ify", "ize", "ise", "hip","ive", "dom"]
-    suffixes_length_4 = ["ness", "ible", "ious",  "ship", "hood"]
-    suffixes_length_5 = ["ation", "ition", "ative", "itive", "enous"]
-    suffixes_lists = [
-        suffixes_length_1,
-        suffixes_length_2,
-        suffixes_length_3,
-        suffixes_length_4,
-        suffixes_length_5
-    ]
+
+    suffixes_lists = ["s", "er", "or", "ty", "al", "ic", "ly", "en", "es", "ed","ist", "ity", "ful",  "ion", "ate", "ify", "ize", "ise", "hip","ive", "dom"
+                      ,"ness", "ible", "ious",  "ship", "hood","ation", "ition", "ative", "itive", "enous"]
     suffix = ''
-    for index, char in enumerate(reversed(word), 0):
-        suffix+=char
-        if suffix in suffixes_lists[index]:
-            if suffix == 's':
-                if word[-2:] == 'es':
-                    return True, 'es'
-                else:
-                    return True, suffix
+    if len(word)>4:
+        word_cut = word[-5:]
+    else:
+        word_cut = word
+    for i in range(len(word_cut)):
+        suffix = word_cut[i:]
+        if suffix in suffixes_lists:
             return True,suffix
-        if index == (len(word) - 1) or index == 4:
-            return False,''
     return False,''
 
 def common_prefix(word):
 
-    pre_fixes_1_letters = []
-    prefixes_2_letters = ['un', 're', 'in', 'im', 'en', 'em', 'de', 'dis', 'ex', "ir","bi"]
-    prefixes_3_letters = ['pre', 'pro', 'sub', 'mis', 'non', 'tri', 'uni', 'tri',  "dis"]
-    prefixes_4_letters = ['anti', 'auto', 'over', 'semi', 'post', 'mega',  'mini', 'mono', 'tele']
-    prefixes_5_letters = ['super', 'hyper', 'under', 'inter', 'extra', 'infra', 'multi', 'macro', 'micro']
-    prefixes_list = [pre_fixes_1_letters,prefixes_2_letters,prefixes_3_letters,prefixes_4_letters,prefixes_5_letters]
+    prefixes_list = ['un', 're', 'in', 'im', 'en', 'em', 'de', 'dis', 'ex', "ir","bi",
+                     'pre', 'pro', 'sub', 'mis', 'non', 'tri', 'uni', 'tri',  "dis",
+                     'anti', 'auto', 'over', 'semi', 'post', 'mega',  'mini', 'mono', 'tele',
+                     'super', 'hyper', 'under', 'inter', 'extra', 'infra', 'multi', 'macro', 'micro']
     prefix = ''
-    for index, char in enumerate(word, 0):
-        prefix += char
-        if prefix in prefixes_list[index]:
+    if len(word) > 4:
+        word_cut = word[:5]
+    else:
+        word_cut = word
+    for i in range(len(word_cut)):
+        prefix = word_cut[:-1-i]
+        if prefix in prefixes_list:
             return True, prefix
-        if index == (len(word) - 1) or index == 3:
-            return False, ''
     return False, ''
