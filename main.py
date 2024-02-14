@@ -3,21 +3,51 @@ from preprocessing import preprocess_train
 from optimization import get_optimal_vector
 from inference import tag_all_test
 from sklearn.metrics import accuracy_score
+from generate_comp_tagged import create_tagged_files
+
+import time
 
 
 def main():
-    threshold = 1
+    threshold = 0.10
     lam = 0.38
 
     train_path = "data/train1.wtag"
-    test_path = "data/test1.wtag"
+    test_path = "data/comp1.words"
 
     weights_path = 'weights.pkl'
-    predictions_path = 'predictions.wtag'
+    predictions_path = 'comp_m1_206897969_123.wtag'
 
     statistics, feature2id = preprocess_train(train_path, threshold)
+    # the time before optimization
+    pretime = time.time()
+
     get_optimal_vector(statistics=statistics, feature2id=feature2id,
                        weights_path=weights_path, lam=lam)
+    # time after
+    print(f"time of optimization is: {time.time() - pretime}")
+
+    create_tagged_files(test_path, weights_path, predictions_path)
+
+    # MODEL 2
+    train_path = "data/train2.wtag"
+    test_path = "data/comp2.words"
+
+    threshold = 0.05
+    lam = 0.38
+    weights_path = 'weights.pkl'
+    predictions_path = 'comp_m2_206897969_123.wtag'
+
+    statistics, feature2id = preprocess_train(train_path, threshold)
+    # the time before optimization
+    pretime = time.time()
+
+    get_optimal_vector(statistics=statistics, feature2id=feature2id,
+                       weights_path=weights_path, lam=lam)
+    # time after
+    print(f"time of optimization is: {time.time() - pretime}")
+
+    create_tagged_files(test_path, weights_path, predictions_path)
 
     with open(weights_path, 'rb') as f:
         optimal_params, feature2id = pickle.load(f)
