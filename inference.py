@@ -177,12 +177,12 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
     if has_uppercase(c_word):
         plural = is_plural(c_word)
         uppers = more_then_one_upper(c_word)
-        if (plural, uppers, c_tag) in feature_to_idx['f109']:
-            index = feature_to_idx['f109'][(plural, uppers, c_tag)]
+        if (plural,uppers, c_tag) in feature_to_idx['f109']:
+            index = feature_to_idx['f109'][(plural,uppers, c_tag)]
             vec_features[index] = 1
 
     # f110 + #f111
-    if len(c_word) >= 4:
+    if len(c_word) >= 3:
         com_suffix, suffix = common_suffix(c_word)
         com_prefix, prefix = common_prefix(c_word)
         if com_suffix:

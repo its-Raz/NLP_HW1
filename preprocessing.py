@@ -2,7 +2,7 @@ from scipy import sparse
 from collections import OrderedDict, defaultdict
 import numpy as np
 from typing import List, Dict, Tuple
-
+import re
 
 WORD = 0
 TAG = 1
@@ -144,10 +144,10 @@ class FeatureStatistics:
                         uppers = more_then_one_upper(sentence[i][0])
                         if (plural, uppers, sentence[i][1]) not in self.feature_rep_dict["f109"]:
                             self.feature_rep_dict["f109"][(
-                                plural, uppers, sentence[i][1])] = 1
+                                 plural,uppers, sentence[i][1])] = 1
                         else:
                             self.feature_rep_dict["f109"][(
-                                plural, uppers, sentence[i][1])] += 1
+                                plural,uppers, sentence[i][1])] += 1
                     # f110+f111
                     if len(sentence[i][0]) >= 4:
                         common_suf, suffix = common_suffix(sentence[i][0])
@@ -225,6 +225,8 @@ class Feature2id:
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
+            if feat_class == "f111":
+                threshold = 2
             if feat_class == "f103":
                 threshold = 15
             if feat_class == "f104":
@@ -233,14 +235,12 @@ class Feature2id:
                 threshold = 2
             if feat_class == "f107":
                 threshold = 2
-            if feat_class == "f108":
-                threshold = 2
-            if feat_class == "f109":
-                threshold = 2
             if feat_class == "f110":
                 threshold = 2
-            if feat_class == "f111":
+            if feat_class == "f108":
                 threshold = 2
+
+
 
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
@@ -335,10 +335,10 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if has_uppercase(c_word):
         plural = is_plural(c_word)
         uppers = more_then_one_upper(c_word)
-        if (plural, uppers, c_tag) in dict_of_dicts["f109"]:
-            features.append(dict_of_dicts["f109"][(plural, uppers, c_tag)])
+        if (plural,uppers,c_tag) in dict_of_dicts["f109"]:
+            features.append(dict_of_dicts["f109"][(plural,uppers, c_tag)])
     # f110
-    if len(c_word) >= 4:
+    if len(c_word) >= 3:
         com_suffix, suffix = common_suffix(c_word)
         com_prefix, prefix = common_prefix(c_word)
         if com_suffix:
@@ -401,6 +401,10 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
             list_of_sentences.append(sentence)
     return list_of_sentences, true_pred  # raz added true_pred
 
+def regex_function(word):
+    # Regular expression pattern to split the string by uppercase letters, lowercase letters, and digits
+    pattern = r'[A-Za-z]+|\d+|\D'
+    return re.findall(pattern, word)
 
 def get_word_type(word):
     has_alpha = False
@@ -469,9 +473,9 @@ def return_our_tag_of_word(word):
     elif word_type == "Numeric":
         return is_numeric_with_or_without_signs(word)
     elif word_type == "Neither":
-        return "Neither"
-    # for AlphaNumeric:
-    return "Mixed"
+        return word
+    # for AlphaNumeric - never used beacuse regex
+    return "AlphaNumeric"
 
 
 def build_template(word):
@@ -479,17 +483,12 @@ def build_template(word):
     # four-ship  -> numerical_string-OnlyAlpha
     # 1\/2-year  -> \/-OnlyAlpha
     # 2003-2005  -> OnlyDigits-OnlyDigits
-    template = ""
-    array_of_words = word.split("-")
-    if (len(array_of_words) == 1):
-        template += return_our_tag_of_word(word)
-        return template
-    else:
-        for word in array_of_words:
-            template += return_our_tag_of_word(word)
-            template += '-'
-        # remove the last -
-    return template[0:-1]
+    regex_list = regex_function(word)
+    list_to_concat = []
+    for word in regex_list:
+        list_to_concat.append(return_our_tag_of_word(word))
+
+    return ''.join(list_to_concat)
 
 
 def has_uppercase(word):
