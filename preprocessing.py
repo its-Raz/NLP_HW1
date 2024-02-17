@@ -54,9 +54,7 @@ class FeatureStatistics:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
-                # sentence = [("*", "*"), ("*", "*")]
-                # for pair in split_words:
-                #     sentence.append(tuple(pair.split("_")))
+
                 sentence.append(("~", "~"))
 
                 for i in range(2, len(sentence) - 1):
@@ -379,7 +377,6 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
     @param tagged: whether the file is tagged (validation set) or not (test set)
     @return: a list of all the sentences, each sentence represented as tuple of list of the words and a list of tags
     """
-    true_pred = []  # raz added
     list_of_sentences = []
     with open(file_path) as f:
         for line in f:
@@ -390,16 +387,14 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
             for word_idx in range(len(split_words)):
                 if tagged:
                     cur_word, cur_tag = split_words[word_idx].split('_')
-                    true_pred.extend([cur_tag])  # raz added
                 else:
                     cur_word, cur_tag = split_words[word_idx], ""
                 sentence[WORD].append(cur_word)
                 sentence[TAG].append(cur_tag)
-
             sentence[WORD].append("~")
             sentence[TAG].append("~")
             list_of_sentences.append(sentence)
-    return list_of_sentences, true_pred  # raz added true_pred
+    return list_of_sentences
 
 def regex_function(word):
     # Regular expression pattern to split the string by uppercase letters, lowercase letters, and digits
@@ -517,8 +512,6 @@ def is_plural(word):
 
 
 def common_suffix(word):
-    # TODO y is in ity ify, s in ness ious, enous , run from 4/5 last letters
-
     suffixes_lists = ["s", "er", "or", "ty", "al", "ic", "ly", "en", "es", "ed", "ist", "ity", "ful",  "ion", "ate", "ify",
                       "ize", "ise", "hip", "ive", "dom", "ness", "ible", "ious",  "ship", "hood", "ation", "ition", "ative", "itive", "enous"]
     suffix = ''

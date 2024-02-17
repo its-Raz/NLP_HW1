@@ -204,21 +204,17 @@ def create_feature_vector(history, size, feature_to_idx, c_tag):
 
 def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
     tagged = "test" in test_path
-    test, true_pred = read_test(test_path, tagged=tagged)  # added true_pred
+    test = read_test(test_path, tagged=tagged)
 
     output_file = open(predictions_path, "a+")
-    predictions = []  # raz added
-    words = []
+
     for k, sen in tqdm(enumerate(test), total=len(test)):
         sentence = sen[0]
         pred = memm_viterbi(sentence, pre_trained_weights, feature2id)[1:]
-        predictions.extend(pred)  # raz added
         sentence = sentence[2:]
         for i in range(len(pred)):
             if i > 0:
                 output_file.write(" ")
             output_file.write(f"{sentence[i]}_{pred[i]}")
-            words.append(sentence[i])
         output_file.write("\n")
     output_file.close()
-    return predictions, true_pred, words  # raz added
