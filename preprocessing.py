@@ -142,10 +142,10 @@ class FeatureStatistics:
                         uppers = more_then_one_upper(sentence[i][0])
                         if (plural, uppers, sentence[i][1]) not in self.feature_rep_dict["f109"]:
                             self.feature_rep_dict["f109"][(
-                                 plural,uppers, sentence[i][1])] = 1
+                                plural, uppers, sentence[i][1])] = 1
                         else:
                             self.feature_rep_dict["f109"][(
-                                plural,uppers, sentence[i][1])] += 1
+                                plural, uppers, sentence[i][1])] += 1
                     # f110+f111
                     if len(sentence[i][0]) >= 4:
                         common_suf, suffix = common_suffix(sentence[i][0])
@@ -237,8 +237,6 @@ class Feature2id:
                 threshold = 2
             if feat_class == "f108":
                 threshold = 2
-
-
 
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
                 if count >= threshold:
@@ -333,8 +331,8 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if has_uppercase(c_word):
         plural = is_plural(c_word)
         uppers = more_then_one_upper(c_word)
-        if (plural,uppers,c_tag) in dict_of_dicts["f109"]:
-            features.append(dict_of_dicts["f109"][(plural,uppers, c_tag)])
+        if (plural, uppers, c_tag) in dict_of_dicts["f109"]:
+            features.append(dict_of_dicts["f109"][(plural, uppers, c_tag)])
     # f110
     if len(c_word) >= 3:
         com_suffix, suffix = common_suffix(c_word)
@@ -396,10 +394,12 @@ def read_test(file_path, tagged=True) -> List[Tuple[List[str], List[str]]]:
             list_of_sentences.append(sentence)
     return list_of_sentences
 
+
 def regex_function(word):
     # Regular expression pattern to split the string by uppercase letters, lowercase letters, and digits
     pattern = r'[A-Za-z]+|\d+|\D'
     return re.findall(pattern, word)
+
 
 def get_word_type(word):
     has_alpha = False
